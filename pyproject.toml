@@ -1,6 +1,6 @@
 [project]
 name = "hd-logging"
-version = "1.0.1"
+version = "1.0.2"
 description = "A comprehensive logging library with OpenTelemetry support, environment variable handling, and advanced log rotation"
 readme = "README.md"
 authors = [

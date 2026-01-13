@@ -55,6 +55,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Best practices guide
 - Troubleshooting section
 
+## [1.0.2] - 2025-01-13
+
+### Fixed
+- **Critical**: Fixed indentation bug where `shouldRollover`, `emit`, and `rotate` methods were incorrectly nested inside `__init__` method, preventing them from being accessible as instance methods
+- Fixed missing `sys` import that could cause `NameError` in `emit()` method when writing to stderr
+- Improved file handle management in `rotate()` method by using context managers (`with` statements) to prevent file handle leaks
+- Fixed incorrect `except` clause indentation in `rotate()` method that caused syntax errors
+
+### Technical Details
+- All class methods are now properly defined at the class level with correct indentation
+- File operations in `rotate()` now use proper context managers for automatic cleanup
+- Error handling in logging methods is now fully functional
+
 ## [Unreleased]
 
 ### Planned
@@ -64,3 +77,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance optimizations
 - Extended OpenTelemetry support
 - Custom log rotation strategies
+
