@@ -47,6 +47,82 @@ def setup_logger(
     logger = logging.getLogger(logger_name)
     logger.setLevel(min(log_level_console, log_level_files))  # Set to lowest for capturing all
 
+    # CRITICAL FIX: Sanitize extra dict to prevent "Attempt to overwrite 'message' in LogRecord" errors
+    # This must be applied even if handlers are already set, to ensure all loggers are protected
+    def _sanitize_extra(extra):
+        """Sanitize extra dict to remove reserved LogRecord keys.
+        
+        Args:
+            extra: The extra dict passed to logging methods, or None
+            
+        Returns:
+            The sanitized extra dict with reserved keys renamed, or None/unchanged if no sanitization needed
+        """
+        # Handle None and non-dict types
+        if extra is None:
+            return None
+        if not isinstance(extra, dict):
+            # If extra is not a dict, return as-is (logging will handle the error)
+            return extra
+        if not extra:  # Empty dict
+            return extra
+        
+        # Check if any reserved keys are present
+        # These are LogRecord attributes that cannot be overwritten
+        reserved_keys = {'message', 'asctime', 'filename'}
+        if any(key in extra for key in reserved_keys):
+            # Create a copy to avoid modifying the original
+            sanitized = extra.copy()
+            if 'message' in sanitized:
+                sanitized['log_message'] = sanitized.pop('message')
+            if 'asctime' in sanitized:
+                sanitized['log_asctime'] = sanitized.pop('asctime')
+            if 'filename' in sanitized:
+                sanitized['log_filename'] = sanitized.pop('filename')
+            return sanitized
+        return extra
+
+    # Only wrap logger methods if not already wrapped (prevent duplicate wrapping)
+    if not getattr(logger, "_extra_sanitized", False):
+        # Wrap logger methods to sanitize extra dict
+        original_warning = logger.warning
+        original_error = logger.error
+        original_info = logger.info
+        original_debug = logger.debug
+        original_critical = logger.critical
+        original_log = logger.log
+
+        # Use **kwargs for maximum compatibility across Python versions
+        # Python's logging methods accept and ignore unknown kwargs in modern versions
+        def patched_warning(msg, *args, extra=None, **kwargs):
+            # Sanitize extra and pass it as a keyword argument
+            # Always pass extra (even if None) to maintain consistent behavior
+            return original_warning(msg, *args, extra=_sanitize_extra(extra), **kwargs)
+        
+        def patched_error(msg, *args, extra=None, **kwargs):
+            return original_error(msg, *args, extra=_sanitize_extra(extra), **kwargs)
+        
+        def patched_info(msg, *args, extra=None, **kwargs):
+            return original_info(msg, *args, extra=_sanitize_extra(extra), **kwargs)
+        
+        def patched_debug(msg, *args, extra=None, **kwargs):
+            return original_debug(msg, *args, extra=_sanitize_extra(extra), **kwargs)
+        
+        def patched_critical(msg, *args, extra=None, **kwargs):
+            return original_critical(msg, *args, extra=_sanitize_extra(extra), **kwargs)
+        
+        def patched_log(level, msg, *args, extra=None, **kwargs):
+            return original_log(level, msg, *args, extra=_sanitize_extra(extra), **kwargs)
+
+        # Apply patches
+        logger.warning = patched_warning
+        logger.error = patched_error
+        logger.info = patched_info
+        logger.debug = patched_debug
+        logger.critical = patched_critical
+        logger.log = patched_log
+        logger._extra_sanitized = True  # Mark as sanitized
+
     # Prevent duplicate handlers
     if getattr(logger, "_custom_handlers_set", False):
         return logger

@@ -68,6 +68,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File operations in `rotate()` now use proper context managers for automatic cleanup
 - Error handling in logging methods is now fully functional
 
+## [1.0.4] - 2026-01-13
+
+### Fixed
+- **Critical**: Fixed type safety bug in `_sanitize_extra` function that could raise `AttributeError` when `extra` parameter was not a dict (e.g., `None`, string, list)
+- **Critical**: Fixed `KeyError` when reserved LogRecord keys (`message`, `asctime`, `filename`) were passed in `extra` dict parameter
+- Fixed reserved LogRecord keys (`message`, `asctime`) not being excluded in `OpenTelemetryFormatter._extract_attributes` method
+- Added automatic sanitization of reserved keys in `extra` dict across all logger methods (`warning`, `error`, `info`, `debug`, `critical`, `log`)
+- Reserved keys are now automatically renamed: `message` → `log_message`, `asctime` → `log_asctime`, `filename` → `log_filename`
+
+### Technical Details
+- `_sanitize_extra` now properly handles `None`, empty dicts, and non-dict types
+- All logger methods now sanitize `extra` dict before passing to Python's logging system
+- `standard_attrs` set in `OpenTelemetryFormatter` now includes `'message'` and `'asctime'` to prevent extraction
+- Sanitization is applied transparently - no API changes required
+- Prevents duplicate wrapping with `_extra_sanitized` flag
+- Comprehensive validation testing performed (63 tests, 100% pass rate)
+
+### Backward Compatibility
+- ✅ Fully backward compatible - no API changes
+- ✅ Transparent fix - existing code works without modification
+- ✅ Defensive handling of edge cases (None, non-dict types, etc.)
+
+## [1.0.3] - 2026-01-13
+
+### Fixed
+- **Critical**: Fixed type safety bug in `_sanitize_extra` function that could raise `AttributeError` when `extra` parameter was not a dict (e.g., `None`, string, list)
+- **Critical**: Fixed `KeyError` when reserved LogRecord keys (`message`, `asctime`) were passed in `extra` dict parameter
+- Fixed reserved LogRecord keys (`message`, `asctime`) not being excluded in `OpenTelemetryFormatter._extract_attributes` method
+- Added automatic sanitization of reserved keys in `extra` dict across all logger methods (`warning`, `error`, `info`, `debug`, `critical`, `log`)
+- Reserved keys are now automatically renamed: `message` → `log_message`, `asctime` → `log_asctime`
+
+### Technical Details
+- `_sanitize_extra` now properly handles `None`, empty dicts, and non-dict types
+- All logger methods now sanitize `extra` dict before passing to Python's logging system
+- `standard_attrs` set in `OpenTelemetryFormatter` now includes `'message'` and `'asctime'` to prevent extraction
+- Sanitization is applied transparently - no API changes required
+- Prevents duplicate wrapping with `_extra_sanitized` flag
+
+### Backward Compatibility
+- ✅ Fully backward compatible - no API changes
+- ✅ Transparent fix - existing code works without modification
+- ✅ Defensive handling of edge cases (None, non-dict types, etc.)
+
 ## [Unreleased]
 
 ### Planned

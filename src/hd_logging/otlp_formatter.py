@@ -70,11 +70,15 @@ class OpenTelemetryFormatter:
         
         # Add ALL custom attributes from extra parameter
         # Get all attributes from the record and filter out standard logging ones
+        # CRITICAL: 'message' and 'asctime' are reserved LogRecord properties that cannot
+        # be overwritten. They must be excluded to prevent KeyError in makeRecord.
         standard_attrs = {
             'args', 'created', 'exc_info', 'exc_text', 'filename', 'funcName', 
             'levelname', 'levelno', 'lineno', 'module', 'msecs', 'msg', 'name', 
             'pathname', 'process', 'processName', 'relativeCreated', 'stack_info', 
-            'taskName', 'thread', 'threadName', 'getMessage', 'otlp_attributes'
+            'taskName', 'thread', 'threadName', 'getMessage', 'otlp_attributes',
+            'message',  # Reserved LogRecord property (computed from msg + args)
+            'asctime'   # Reserved LogRecord property (formatted timestamp)
         }
         
         for attr_name in dir(record):
