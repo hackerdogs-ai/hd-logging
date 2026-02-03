@@ -111,6 +111,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Transparent fix - existing code works without modification
 - ✅ Defensive handling of edge cases (None, non-dict types, etc.)
 
+## [1.0.6] - 2026-01-13
+
+### Added
+- **Resilient Error Handling**: Comprehensive exception handling throughout `setup_logger()`
+  - Never crashes the program - always returns a usable logger
+  - Graceful degradation: falls back to simpler configurations on failures
+  - Handles all failure scenarios: permission errors, disk full, invalid paths, etc.
+  - Multiple fallback levels ensure logging always works
+- **Standard Output Separation**: Warnings and errors now follow Unix conventions
+  - Warnings (non-critical issues) → stdout
+  - Errors (critical issues) → stderr
+  - Better integration with Docker/Kubernetes log collection
+  - Easier filtering and monitoring of warnings vs errors
+
+### Improved
+- **Error Handling in setup_logger()**: 
+  - Environment variable access wrapped with fallbacks
+  - Formatter creation has multiple fallback levels
+  - Handler creation failures handled gracefully
+  - File handler creation failures use console handler only
+  - Always ensures at least one basic handler exists
+- **Exception Message Routing**:
+  - Directory creation failures → Warning to stdout
+  - File handler creation failures → Warning to stdout (non-critical)
+  - Logging handler errors → Error to stderr
+  - Log rotation failures → Error to stderr
+  - All exceptions properly categorized and routed
+
+### Technical Details
+- `setup_logger()` now has try/except blocks around all critical operations
+- Formatter failures fall back to simple formatters, then default formatters
+- Handler failures fall back to basic StreamHandler
+- File handler failures continue with console handler only
+- All error messages properly prefixed with "Warning:" or "Error:"
+- No exceptions are ever raised from `setup_logger()` - always returns a logger
+
+### Backward Compatibility
+- ✅ Fully backward compatible - no API changes
+- ✅ All existing code works without modification
+- ✅ Enhanced resilience without breaking changes
+
+## [1.0.5] - 2026-01-13
+
+### Added
+- **Container/Docker Support**: Added `FORCE_LOGS_TO_STDOUT` environment variable support
+  - When enabled, logs go to stdout (INFO/DEBUG) and stderr (WARNING/ERROR/CRITICAL)
+  - No file handler is created, perfect for containerized environments
+  - Logs are automatically captured by Docker/Kubernetes log collectors
+- **Multiprocess-Safe Log Rotation**: Enhanced log rotation to handle concurrent access
+  - Handles `FileNotFoundError` when multiple processes rotate the same log file
+  - Automatically reopens file handles if rotated by another process
+  - Prevents crashes from race conditions in Celery workers and multiprocess setups
+- **Delete Log Files on Rotation**: Added `DELETE_LOG_FILE_ON_COMPRESSION` environment variable
+  - When enabled, rotated log files are deleted instead of compressed
+  - Useful when log files are managed by external tools (log shippers, etc.)
+  - Supports values: `true`, `1`, `yes` (case-insensitive)
+
+### Fixed
+- **Log Rotation Race Conditions**: Fixed `FileNotFoundError` in multiprocess scenarios
+  - `rotate()` now checks if source file exists before attempting rename
+  - Catches and handles `FileNotFoundError` gracefully (file already rotated by another process)
+  - Prevents rotation errors from breaking logging in concurrent environments
+- **Stream Error Handling**: Improved error handling in `shouldRollover()` and `emit()`
+  - `shouldRollover()` handles OSError/IOError/ValueError from stream operations
+  - Automatically reopens stream if file was rotated/deleted by another process
+  - `emit()` wraps parent emit() to prevent logging failures from crashing the application
+
+### Technical Details
+- `FORCE_LOGS_TO_STDOUT` can be set to `true`, `1`, or `yes` (case-insensitive)
+- When enabled, `log_file_path` parameter is ignored (no file handler created)
+- Multiprocess-safe rotation works automatically - no configuration needed
+- All error handling is defensive and prevents crashes
+
+### Use Cases
+- **Docker/Kubernetes**: Set `FORCE_LOGS_TO_STDOUT=true` in container environment
+- **Celery Workers**: Multiple workers can safely share the same log file
+- **Multiprocess Applications**: No special handling needed for concurrent log rotation
+
 ## [Unreleased]
 
 ### Planned

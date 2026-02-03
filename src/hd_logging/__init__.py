@@ -21,7 +21,7 @@ from .env_print import (
 from .otlp_formatter import OpenTelemetryFormatter
 from .SizeAndTimeLoggingHandler import SizeAndTimeLoggingHandler
 
-__version__ = "1.0.4"
+__version__ = "1.0.6"
 __author__ = "Hackerdogs.ai"
 __email__ = "support@hackerdogs.ai"
 
